@@ -8,7 +8,7 @@ Collects a set of descriptive measures of F0 from Pitch objects paired with Text
 
 - **Mean**
 - **Median**
-- **Baseline**: 7.4<sup>th</sup> quantile of the F0 sample (see [^paper])
+- **Baseline**: 7.4<sup>th</sup> quantile of the F0 sample (see [Reference](#reference))
 - **Standard deviation** (SD)
 - **Coefficient of variation**: (SD/mean * 100)
 - **Quartile coefficient of dispersion**: ((Q<sub>3</sub> - Q<sub>1</sub>)/(Q<sub>3</sub> + Q<sub>1</sub>) * 100)
@@ -37,5 +37,6 @@ The parameters are:
 
 See the [LICENSE](LICENSE.md) file for license rights and limitations.
 
+## Reference
 
-[^paper]: Traunmüller, H., and A. Eriksson. n.d. "The Frequency Range of the Voice Fundamental in the Speech of Male and Female Adults." http://www2.ling.su.se/staff/hartmut/f0_m&f.pdf.
+Traunmüller, H., and A. Eriksson. n.d. "The Frequency Range of the Voice Fundamental in the Speech of Male and Female Adults." http://www2.ling.su.se/staff/hartmut/f0_m&f.pdf.

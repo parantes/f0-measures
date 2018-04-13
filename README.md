@@ -1,5 +1,7 @@
 # f0_measures.praat
 
+[![DOI](https://zenodo.org/badge/129289935.svg)](https://zenodo.org/badge/latestdoi/129289935)
+
 Praat script to collect descriptive measures of F0.
 
 ## Purpose
@@ -36,6 +38,10 @@ The parameters are:
 ## License
 
 See the [LICENSE](LICENSE.md) file for license rights and limitations.
+
+## How to cite
+
+Click on the DOI badge above to see instructions on how to cite the script.
 
 ## Reference
 

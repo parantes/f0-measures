@@ -7,12 +7,7 @@
 #
 # Pablo Arantes <pabloarantes@gmail.com>
 #
-# # Changelog:
-# - 2013-10-24: created
-# - 2018-03-08: "no interpolation" option wasn't being honored; fixed semitone-converted Pitch
-#     object being selected when Hertz unit was the correct choice; updated style to "colon syntax";
-#     fixed errors in "interp_quad" procedure; semitone conversion is now done re 1 Hz.
-# - 2018-04-11: added license information.
+# See CHANGELOG.md for a complete version history.
 #
 # Copyright (C) 2013-2018 Pablo Arantes
 #
@@ -68,7 +63,7 @@ else
 endif
 
 deleteFile: report$
-writeFileLine: report$, "filename", sep$, "label", sep$, header$ 
+writeFileLine: report$, "filename", sep$, "label", sep$, "dur", sep$, header$, sep$, "peak_rate", sep$, "peak_cv", sep$
 
 # List of Pitch files to be processed
 list = Create Strings as file list: "pitch_files", pitch_folder$ + "*.Pitch"
@@ -81,6 +76,10 @@ empty$ = ""
 for file to files
 	pitch$ = object$[list, file]
 	pitch = Read from file: pitch_folder$ + pitch$
+
+	# Generate f0 peaks object
+	@peak_info: pitch
+	f0_peaks = peak_info.max
 
 	# Pitch object processing
 	## Smoothing
@@ -105,12 +104,13 @@ for file to files
 		pitch = interp
 	endif
 
+	# TextGrid files processing
 	grid$ = selected$("Pitch") + ".TextGrid"
 
-	# Throw message error if unable to find TextGrid file matching Pitch file
+	## Throw error message if unable to find TextGrid file matching Pitch file
 	readable = fileReadable(grid_folder$ + grid$)
 	if readable = 0
-		exitScript: "Could not find ", grid$, "at ", grid_folder$, "."
+		exitScript: "Could not find ", grid$, " at ", grid_folder$, "."
 	endif
 
 	grid = Read from file: grid_folder$ + grid$
@@ -123,16 +123,28 @@ for file to files
 	sel = Extract one tier: tier
 	tab = Down to Table: "no", 6, "no", "no"
 	n = Get number of rows
-	# Process only tiers with at least one non-empty intervals
+	# Process only tiers with at least one non-empty interval
     if n = 0
 		# Collect info about empty tiers
         empty += 1
         empty$ = empty$ + "'empty') " + file$ + newline$
 	else
 		for i to n
+			# Interval information
 			label$ = object$[tab, i, 2]
 			start = object[tab, i, 1]
 			end = object[tab, i, 3]
+			dur_int = end - start
+			dur$ = fixed$(dur_int, 3)
+
+			# F0 peaks measures
+			selectObject: f0_peaks
+			periods = Get number of periods: start, end, 0.0001, dur_int, 1.3
+			period_mean = Get mean period: start, end, 0.0001, dur_int, 1.3
+			period_sd = Get stdev period: start, end, 0.0001, dur_int, 1.3
+			f0_peaks_rate$ = fixed$((periods + 1) / dur_int, 2)
+			f0_peaks_cv$ = fixed$(period_sd / period_mean * 100, 1)
+			data_peaks$ = f0_peaks_rate$ + sep$ + f0_peaks_cv$
 
 			if (units = 1) or (units = 2)
 				# Measures in Hertz
@@ -260,16 +272,17 @@ for file to files
 			# ----------------------------
 
 			if units = 1
-				appendFileLine: report$, file$, sep$, label$, sep$, data_hz$, sep$, data_st$
+				scales$ = data_hz$ + sep$ + data_st$
 			elsif units = 2
-				appendFileLine: report$, file$, sep$, label$, sep$, data_hz$
+				scales$ = data_hz$
 			else
-				appendFileLine: report$, file$, sep$, label$, sep$, data_st$
+				scales$ = data_st$
 			endif
+			appendFileLine: report$, file$, sep$, label$, sep$, dur$, sep$, scales$, sep$, data_peaks$
 		endfor
 
 	endif
-	removeObject: grid, sel, tab, pitch
+	removeObject: grid, sel, tab, pitch, f0_peaks
 endfor
 
 removeObject: list
@@ -294,4 +307,29 @@ procedure interp_quad: .pitch
 	# Unvoice the edges
 	Formula: "if x < .first or x > .last then 0 else self endif"
 	removeObject: .ptier
+endproc
+
+procedure peak_info: .pitch
+# Generate a PointProcess object containing f0 peaks (local maxima)
+# in a smoothed, interpolated Pitch object contour.
+#
+# Arguments
+# .pitch: [integer] id of Pitch object
+	selectObject: .pitch
+	.step = object[.pitch].dx
+	.f0max = Get maximum: 0, 0, "Hertz", "Parabolic"
+	.f0max = ceiling(.f0max / 10) * 10
+	.f0min = Get minimum: 0.0, 0.0, "Hertz", "Parabolic"
+	.f0min = floor(.f0min / 10) * 10
+	.sm = Smooth: 2
+	# Pitch is converted to PitchTier and back to Pitch again
+	# Conversion is done in order to apply quadratic interpolation
+	# and constant interpolation at the borders
+	.ptier = Down to PitchTier
+	Interpolate quadratically: 4, "Semitones"
+	.pitch_interp = To Pitch: .step, .f0min, .f0max
+	.pitch_mat = To Matrix
+	.pitch_sound = To Sound
+	.max = To PointProcess (extrema): 1, "yes", "no", "Sinc70"
+	removeObject: .sm, .ptier, .pitch_interp, .pitch_mat, .pitch_sound
 endproc

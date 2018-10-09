@@ -18,6 +18,8 @@ Collects a set of descriptive measures of F0 from Pitch objects paired with Text
 - **Basedev**: median absolute deviation from baseline
 - **Meandev**: mean - baseline
 - **Range**: log<sub>2</sub>(F0<sub>max</sub> / F0<sub>min</sub>) * 12
+- **Peak rate**: rate o F0 peaks per second 
+- **Interpeak duration CoV**: coefficient of duration of time between peaks
 
 ## Parameters
 

@@ -1,6 +1,6 @@
 # f0_measures.praat
 
-[![DOI](https://zenodo.org/badge/129289935.svg)](https://zenodo.org/badge/latestdoi/129289935)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1453467.svg)](https://doi.org/10.5281/zenodo.1453467)
 
 Praat script to collect descriptive measures of F0.
 
@@ -12,14 +12,14 @@ Collects a set of descriptive measures of F0 from Pitch objects paired with Text
 - **Median**
 - **Baseline**: 7.4<sup>th</sup> quantile of the F0 sample (see [Reference](#reference))
 - **Standard deviation** (SD)
-- **Coefficient of variation**: (SD/mean * 100)
+- **Coefficient of variation** (CV): (SD/mean) * 100
 - **Quartile coefficient of dispersion**: ((Q<sub>3</sub> - Q<sub>1</sub>)/(Q<sub>3</sub> + Q<sub>1</sub>) * 100)
 - **Median absolute deviation** (MAD): median of the deviations from the sample median
 - **Basedev**: median absolute deviation from baseline
 - **Meandev**: mean - baseline
 - **Range**: log<sub>2</sub>(F0<sub>max</sub> / F0<sub>min</sub>) * 12
-- **Peak rate**: rate o F0 peaks per second 
-- **Interpeak duration CoV**: coefficient of duration of time between peaks
+- **Peak rate**: rate of F0 peaks per second 
+- **Interpeak duration CV**: coefficient of variance of duration of time between peaks
 
 ## Parameters
 
@@ -36,6 +36,10 @@ The parameters are:
 - **Interpolation**: which kind of interpolation apply in voiceless intervals. Options are no interpolation, quadratic or linear.
 - **Units**: scale of measurement - Hertz, semitones relative to 1 Hz or both.
 - **Separator**: character used to separate columns in the report file - tab, comma or single white space.
+
+## Changelog
+
+See the [CHANGELOG](CHANGELOG.md) file for the complete version history.
 
 ## License
 

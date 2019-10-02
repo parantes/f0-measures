@@ -1,6 +1,6 @@
 # f0_measures.praat
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1453467.svg)](https://doi.org/10.5281/zenodo.1453467)
+[![DOI](https://zenodo.org/badge/129289935.svg)](https://zenodo.org/badge/latestdoi/129289935)
 
 Praat script to collect descriptive measures of F0.
 

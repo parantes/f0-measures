@@ -9,7 +9,7 @@
 #
 # See CHANGELOG.md for a complete version history.
 #
-# Copyright (C) 2013-2018 Pablo Arantes
+# Copyright (C) 2013-2019 Pablo Arantes
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -105,6 +105,7 @@ for file to files
 	endif
 
 	# TextGrid files processing
+	selectObject: pitch
 	grid$ = selected$("Pitch") + ".TextGrid"
 
 	## Throw error message if unable to find TextGrid file matching Pitch file

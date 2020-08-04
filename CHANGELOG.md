@@ -4,9 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.2] - 2020-05-18
+### Added
+- Median f0 excursion (valley-to-peak range)
+
+### Changed
+- F0 peak rate now is done after filtering excursions of at least 0.5 semitones
+- Interpeak period SD instead of variation coefficient
+
+### Fixed
+- Better code layout and more comments
+- Return "NA" if interpeak SD in null (when there is only one peak in the analysis interval)
+- Terminantes script execution if Praat's version is older than 6.1.xx
+
 ## [1.1.1] - 2019-08-23
 ### Fixed
-- Bug fix.
+- Bug fixes.
 
 ## [1.1.0] - 2018-09-22
 ### Added

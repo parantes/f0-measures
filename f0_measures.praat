@@ -5,11 +5,13 @@
 # paired with TextGrids. Measures will be collected for every
 # non-empty interval in a selected tier.
 #
+# Version: [1.2] - 2020-05-18
+#
 # Pablo Arantes <pabloarantes@gmail.com>
 #
 # See CHANGELOG.md for a complete version history.
 #
-# Copyright (C) 2013-2019 Pablo Arantes
+# Copyright (C) 2013-2020 Pablo Arantes
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -39,6 +41,11 @@ form F0 measures
 		button Single space
 endform
 
+# Exit if Praat version is too old (earlier than 6.1.xx)
+if praatVersion < 6100
+	exitScript: "Update Praat to a newer version. Yours is ", praatVersion$
+endif
+
 if separator = 1
 	sep$ = tab$
 elsif separator = 2
@@ -49,10 +56,29 @@ endif
 
 # Report file header
 ## Hertz units
-header_hz$ = "mean_hz" + sep$ + "median_hz" + sep$ + "baseline_hz" + sep$ + "sd_hz" + sep$ + "cv_hz" + sep$ + "qcd_hz" + sep$ + "mad_hz" + sep$ + "basedev_hz" + sep$ + "mean_to_base_hz"
+header_hz$ = "peak-range_hz" + sep$ + 
+		 ... "mean_hz" + sep$ + 
+		 ... "median_hz" + sep$ + 
+		 ... "baseline_hz" + sep$ + 
+		 ... "sd_hz" + sep$ + 
+		 ... "cv_hz" + sep$ + 
+		 ... "qcd_hz" + sep$ + 
+		 ... "mad_hz" + sep$ + 
+		 ... "basedev_hz" + sep$ +
+		 ... "mean-to-base_hz"
 
 ## Semitones units
-header_st$ = "range_st" + sep$ +  "mean_st" + sep$ + "median_st" + sep$ + "baseline_st" + sep$ + "sd_st" + sep$ + "cv_st" + sep$ + "qcd_st" + sep$ + "mad_st" + sep$ + "basedev_st" + sep$ + "mean_to_base_st"
+header_st$ = "peak-range_st" + sep$ + 
+         ... "range_st" + sep$ +  
+         ... "mean_st" + sep$ + 
+         ... "median_st" + sep$ + 
+         ... "baseline_st" + sep$ + 
+         ... "sd_st" + sep$ + 
+         ... "cv_st" + sep$ + 
+         ... "qcd_st" + sep$ + 
+         ... "mad_st" + sep$ + 
+         ... "basedev_st" + sep$ + 
+         ... "mean-to-base_st"
 
 if units = 1
 	header$ = header_hz$ + sep$ + header_st$
@@ -63,7 +89,7 @@ else
 endif
 
 deleteFile: report$
-writeFileLine: report$, "filename", sep$, "label", sep$, "dur", sep$, header$, sep$, "peak_rate", sep$, "peak_cv", sep$
+writeFileLine: report$, "filename", sep$, "label", sep$, "dur", sep$, "peak_rate", sep$, "interpeak_sd", sep$, header$
 
 # List of Pitch files to be processed
 list = Create Strings as file list: "pitch_files", pitch_folder$ + "*.Pitch"
@@ -77,9 +103,14 @@ for file to files
 	pitch$ = object$[list, file]
 	pitch = Read from file: pitch_folder$ + pitch$
 
-	# Generate f0 peaks object
+	# F0 peaks procedure
+	## Minimum excursion range (in semitones)
+	excursion_threshold = 0.5
 	@peak_info: pitch
-	f0_peaks = peak_info.max
+	f0_peaks_tab = peak_info.tab
+	selectObject: f0_peaks_tab
+	nowarn Extract rows where column (number): "st", "greater than or equal to", excursion_threshold
+	keep_peaks = selected("Table")
 
 	# Pitch object processing
 	## Smoothing
@@ -139,13 +170,37 @@ for file to files
 			dur$ = fixed$(dur_int, 3)
 
 			# F0 peaks measures
-			selectObject: f0_peaks
-			periods = Get number of periods: start, end, 0.0001, dur_int, 1.3
-			period_mean = Get mean period: start, end, 0.0001, dur_int, 1.3
-			period_sd = Get stdev period: start, end, 0.0001, dur_int, 1.3
-			f0_peaks_rate$ = fixed$((periods + 1) / dur_int, 2)
-			f0_peaks_cv$ = fixed$(period_sd / period_mean * 100, 1)
-			data_peaks$ = f0_peaks_rate$ + sep$ + f0_peaks_cv$
+			## Peak rate
+			selectObject: keep_peaks
+			nowarn Extract rows where column (number): "time_max", "greater than or equal to", start
+			keep_temp = selected("Table")
+			nowarn Extract rows where column (number): "time_max", "less than or equal to", end
+			keep = selected("Table")
+			npeaks = object[keep].nrow
+			f0_peaks_rate$ = fixed$(npeaks / dur_int, 2)
+			## Interpeak period SD
+			## Only if npeaks > 1
+			if npeaks > 1
+				periods# = zero#(npeaks)
+				for p from 2 to npeaks
+					periods#[p] = object[keep, p, 1] - object[keep, p - 1, 1]
+				endfor
+				f0_peaks_sd$ = fixed$(stdev(periods#), 2)
+			else
+				f0_peaks_sd$ = "NA"
+			endif
+			
+			## Report line
+			data_peaks$ = f0_peaks_rate$ + sep$ + f0_peaks_sd$ + sep$
+
+			## Median f0 excursion range
+			selectObject: keep
+			f0_pk_rg_hz = Get quantile: "hz", 0.5
+			f0_pk_rg_hz$ = fixed$(f0_pk_rg_hz, 1)
+			f0_pk_rg_st = Get quantile: "st", 0.5
+			f0_pk_rg_st$ = fixed$(f0_pk_rg_st, 2)
+
+			removeObject: keep_temp, keep
 
 			if (units = 1) or (units = 2)
 				# Measures in Hertz
@@ -197,7 +252,7 @@ for file to files
 				mean_to_base_hz$ = fixed$(mean_hz - baseline_hz, 1)
 
 				# Join results in a string
-				data_hz$ = mean_hz$ + sep$ + median_hz$ + sep$ + baseline_hz$ + sep$ + sd_hz$ + sep$ + cv_hz$ + sep$ + qcd_hz$ + sep$ + mad_hz$ + sep$ + basedev_hz$ + sep$ + mean_to_base_hz$
+				data_hz$ = f0_pk_rg_hz$ + sep$ + mean_hz$ + sep$ + median_hz$ + sep$ + baseline_hz$ + sep$ + sd_hz$ + sep$ + cv_hz$ + sep$ + qcd_hz$ + sep$ + mad_hz$ + sep$ + basedev_hz$ + sep$ + mean_to_base_hz$
 			endif
 			
 			if (units = 1) or (units = 3)
@@ -262,7 +317,7 @@ for file to files
 				mean_to_base_st$ = fixed$(mean_st - baseline_st, 2)
 
 				# Join results in a strings
-				data_st$ = range_st$ + sep$ + mean_st$ + sep$ + median_st$ + sep$ + baseline_st$ + sep$ + sd_st$ + sep$ + cv_st$ + sep$ + qcd_st$ + sep$ + mad_st$ + sep$ + basedev_st$ + sep$ + mean_to_base_st$
+				data_st$ = f0_pk_rg_st$ + sep$ + range_st$ + sep$ + mean_st$ + sep$ + median_st$ + sep$ + baseline_st$ + sep$ + sd_st$ + sep$ + cv_st$ + sep$ + qcd_st$ + sep$ + mad_st$ + sep$ + basedev_st$ + sep$ + mean_to_base_st$
 			endif
 
 			if (units = 1) or (units = 3)
@@ -279,11 +334,16 @@ for file to files
 			else
 				scales$ = data_st$
 			endif
-			appendFileLine: report$, file$, sep$, label$, sep$, dur$, sep$, scales$, sep$, data_peaks$
+			appendFileLine: report$, file$, sep$, 
+			... label$, sep$, 
+			... dur$, sep$, 
+			... f0_peaks_rate$, sep$, 
+			... f0_peaks_sd$, sep$, 
+			... scales$
 		endfor
 
 	endif
-	removeObject: grid, sel, tab, pitch, f0_peaks
+	removeObject: grid, sel, tab, pitch, keep_peaks, f0_peaks_tab
 endfor
 
 removeObject: list
@@ -332,5 +392,33 @@ procedure peak_info: .pitch
 	.pitch_mat = To Matrix
 	.pitch_sound = To Sound
 	.max = To PointProcess (extrema): 1, "yes", "no", "Sinc70"
-	removeObject: .sm, .ptier, .pitch_interp, .pitch_mat, .pitch_sound
+		selectObject: .pitch_sound
+	.min = To PointProcess (extrema): 1, "no", "yes", "Sinc70"
+
+	# Create Table object with row count equal to the smallest count
+	# of points in the PointProcess objects
+	selectObject: .min
+	.n_min = Get number of points
+	selectObject: .max
+	.n_max = Get number of points
+	.n = min(.n_min, .n_max)
+	.tab = Create Table with column names: "extrema", .n, "time_max hz st"
+
+	# Write times of maxima values and excursion (max - min) to Table
+	for .point to .n
+		selectObject: .min
+		.tmin = Get time from index: .point
+		selectObject: .max
+		.tmax = Get time from index: .point
+		selectObject: .pitch_sound
+		.fmin = Get value at time: 1, .tmin, "Sinc70"
+		.fmax = Get value at time: 1, .tmax, "Sinc70"
+		selectObject: .tab
+		Set numeric value: .point, "time_max", .tmax
+		Set numeric value: .point, "hz", abs(.fmax - .fmin)
+		Set numeric value: .point, "st", abs(log2(.fmax / .fmin) * 12)
+	endfor
+	removeObject: .sm, .ptier, .pitch_interp, .pitch_mat, .pitch_sound, .max, .min
 endproc
+
+appendInfoLine: "Run on ", date$()
